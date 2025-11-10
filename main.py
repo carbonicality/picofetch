@@ -5,6 +5,7 @@ import platform
 import socket
 from datetime import datetime
 import subprocess
+import glob
 
 class Colours:
     RESET = '\033[0m'
@@ -69,18 +70,27 @@ def get_shell():
     return os.path.basename(shell)
 
 def get_pkgs():
-    pass
-
-def get_res():
     try:
-        result = subprocess.run(['xrandr'], capture_output=True, text=True, timeout=2)
-        for line in result.stdout.split('\n'):
-            if '*' in line:
-                res = line.split()[0]
-                return res
+        pkg_mgrs = [
+            ('pacman -Q','pacman'),
+            ('dpkg -l','dpkg'),
+            ('rpm -qa','rpm'),
+            ('emerge -ep world','portage'),
+            ('apk info','apk'),
+            ('xbps-query -l','xbps')
+        ]
+        for cmd, mgr in pkg_mgrs:
+            try:
+                result = subprocess.run(cmd.split(), capture_output=True, text=True, timeout=5)
+                if result.returncode == 0:
+                    count = len([line for line in result.stdout.strip().split('\n') if line.strip()])
+                    return f"{count} ({mgr})"
+            except:
+                continue
+        
+        return "unknown"
     except:
-        pass
-    return "unknown" 
+        return "unknown"
 
 def get_wm():
     de = os.environ.get('XDG_CURRENT_DESKTOP', '')
@@ -93,7 +103,6 @@ def get_wm():
 
 def get_pdevs():
     try:
-        import glob
         mounts = []
         with open('/proc/mounts', 'r') as f:
             for line in f:
@@ -145,7 +154,6 @@ kernel = platform.release()
 upt = get_upt()
 pkgs = get_pkgs()
 shell = get_shell()
-res = get_res()
 de_wm = get_wm()
 terminal = os.environ.get('TERM', 'unknown')
 cpu = get_cpu()
@@ -163,7 +171,6 @@ info_lns = [
     f"{Colours.CYAN}Uptime{Colours.RESET}: {upt}",
     f"{Colours.CYAN}Packages{Colours.RESET}: {pkgs}",
     f"{Colours.CYAN}Shell{Colours.RESET}: {shell}",
-    f"{Colours.CYAN}Resolution{Colours.RESET}: {res}",
     f"{Colours.CYAN}DE{Colours.RESET}: {de_wm}",
     f"{Colours.CYAN}Terminal{Colours.RESET}: {terminal}",
     f"{Colours.CYAN}CPU{Colours.RESET}: {cpu}",
