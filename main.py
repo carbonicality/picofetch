@@ -91,6 +91,28 @@ def get_wm():
         return wm
     return "unknown"
 
+def get_pdevs():
+    try:
+        import glob
+        mounts = []
+        with open('/proc/mounts', 'r') as f:
+            for line in f:
+                parts = line.split()
+                if len(parts) >= 2:
+                    device,mount=parts[0],parts[1]
+                    if 'RPI-RP2' in mount or 'CIRCUITPY' in mount or 'PICO' in mount.upper(): # some common rpi mounts i think? idk tho if picoducky uses circuitpy tho
+                        return device  
+        
+        #alternatively, we look for USB storage devices
+        #future note: nvm this method is SO BAD that we're removing it
+        #usb_devs = glob.glob('/dev/sd*')
+        #if usb_devs:
+            #latest = max(usb_devs, key=os.path.getctime) # this is a horrible way to do it but idk any other ways sorry gng
+            #return latest
+        #return "Unknown"
+    except:
+        return "Unknown" # ngl i wont be too surprised if it gets here cuz idrk too much about this anyway bro sorry
+
 ascii_art = [
     "        @@@@@@@@@      @@@@@@@@@        ",
     "      @           @  @           @      ",
@@ -130,6 +152,7 @@ cpu = get_cpu()
 cpu_cores = get_cpu_count()
 mem = get_mem()
 disk = get_disk_usg()
+pdev = get_pdevs()
 
 info_lns = [
     f"{Colours.CYAN}{username}{Colours.RESET}@{Colours.CYAN}{hostname}{Colours.RESET}",
@@ -151,10 +174,26 @@ info_lns = [
     f"{Colours.RED}███{Colours.GREEN}███{Colours.YELLOW}███{Colours.BLUE}███{Colours.MAGENTA}███{Colours.CYAN}███{Colours.RESET}"
 ]
 
+pico_lns = [
+    f"{Colours.MAGENTA}Picoducky{Colours.RESET}",
+    f"{Colours.MAGENTA}------------------------{Colours.RESET}",
+    f"{Colours.MAGENTA}Model{Colours.RESET}: Picoducky w/ RP2350",
+    f"{Colours.MAGENTA}Payload{Colours.RESET}: main.py",
+    f"{Colours.MAGENTA}Status{Colours.RESET}: active",
+    f"{Colours.MAGENTA}Device{Colours.RESET}: {pdev}"
+]
+
 print()
-max_lns = max(len(ascii_art), len(info_lns))
+max_lns= max(len(ascii_art), len(info_lns), len(pico_lns))
 for i in range(max_lns):
-    left = ascii_art[i] if i < len(ascii_art) else " " * 26
-    right = info_lns[i] if i < len(info_lns) else ""
-    print(f"{left} {right}")
+    left = ascii_art[i] if i < len(ascii_art) else ' ' * 40
+    if i < len(info_lns):
+        middle = info_lns[i]
+        middle_vis = info_lns[i].replace(Colours.CYAN, '').replace(Colours.RESET, '').replace(Colours.RED, '').replace(Colours.GREEN, '').replace(Colours.YELLOW, '').replace(Colours.BLUE, '').replace(Colours.MAGENTA, '') # some HUGE ahh line bro
+        padding = 50 - len(middle_vis)
+        middle = middle + (' ' * padding)
+    else:
+        middle = ' ' * 50
+    right = pico_lns[i] if i < len(pico_lns) else ""
+    print(f"{left} {middle} {right}")
 print()
